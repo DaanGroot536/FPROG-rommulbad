@@ -154,7 +154,9 @@ let getTotalEligibleMinutes (name: string, diploma: string) : HttpHandler =
 let routes: HttpHandler =
     choose
         [ GET >=> route "/candidate" >=> getCandidates
+          //POST >=> routef "/candidate" >=> addCandidate
           GET >=> routef "/candidate/%s" getCandidate
+          //POST >=> routef "/candidate/%s/guardian" >=> addGuardian
           POST >=> routef "/candidate/%s/session" addSession
           GET >=> routef "/candidate/%s/session" getSessions
           GET >=> routef "/candidate/%s/session/total" getTotalMinutes

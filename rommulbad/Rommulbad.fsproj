@@ -20,4 +20,9 @@
     <PackageReference Include="Thoth.Json.Net" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DataAccess\DataAccess.fsproj" />
+    <ProjectReference Include="..\Service\Service.fsproj" />
+  </ItemGroup>
+
 </Project>
