@@ -1,13 +1,12 @@
 module Rommulbad.Web
 
-open Rommulbad
-open Rommulbad.Database
-open Rommulbad.Store
+open DataAccess.Database
+open DataAccess.Store
 open Giraffe
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 
-
+//TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
     fun next ctx ->
         task {

@@ -1,7 +1,7 @@
-module Rommulbad.Store
+module DataAccess.Store
 
 open System
-open Rommulbad.Database
+open DataAccess.Database
 
 /// Here a store is created that contains the following tables with the following attributes
 ///

@@ -5,7 +5,7 @@
 /// ==== this file for the          ====
 /// ==== assessment                 ====
 /// ====================================
-namespace Rommulbad.Database
+namespace DataAccess.Database
 
 type InsertError = UniquenessError of string
 

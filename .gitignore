@@ -2,6 +2,6 @@
 .idea
 *.log
 tmp/
-
+.vs/
 obj/
 bin/

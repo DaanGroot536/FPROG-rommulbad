@@ -5,4 +5,12 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="Candidate\Candidate.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Session\" />
+  </ItemGroup>
+
 </Project>
