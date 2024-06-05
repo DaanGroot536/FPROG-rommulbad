@@ -3,6 +3,7 @@ module Rommulbad.Web
 open DataAccess.Database
 open DataAccess.Store
 open Giraffe
+open Model
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 

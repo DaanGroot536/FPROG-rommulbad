@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Database.fs" />
+    <Compile Include="Store.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Application\Application.fsproj" />
     <ProjectReference Include="..\Model\Model.fsproj" />
   </ItemGroup>

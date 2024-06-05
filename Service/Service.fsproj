@@ -6,7 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Serialization.fs" />
+    <Compile Include="Web.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Application\Application.fsproj" />
+    <ProjectReference Include="..\DataAccess\DataAccess.fsproj" />
   </ItemGroup>
 
 </Project>
