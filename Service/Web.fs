@@ -4,8 +4,10 @@ open DataAccess.Database
 open DataAccess.Store
 open Giraffe
 open Model
+open Model.Common
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
+open Service.Serialization
 
 //TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
@@ -16,11 +18,18 @@ let getCandidates: HttpHandler =
             let candidates =
                 InMemoryDatabase.all store.candidates
                 |> Seq.map (fun (name, _, gId, dpl) ->
-                    { Candidate.Name = name
-                      GuardianId = gId
-                      Diploma = dpl })
+                    let decodedNameResult = decodeName name
+                    let decodedGIdResult = decodeIdentifier gId
+                    let decodedDplResult = decodeDiploma dpl
 
-            return! ThothSerializer.RespondJsonSeq candidates Candidate.encode next ctx
+                    match decodedNameResult, decodedGIdResult, decodedDplResult with
+                    | Ok decodedName, Ok decodedGId, Ok decodedDpl ->
+                        Some { Candidate.Name = decodedName; GuardianId = Some decodedGId; Diploma = Some decodedDpl }
+                    | _ -> None
+                )
+                |> Seq.choose id
+
+            return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
         }
 
 let getCandidate (name: string) : HttpHandler =
@@ -30,26 +39,26 @@ let getCandidate (name: string) : HttpHandler =
 
             let candidate = InMemoryDatabase.lookup name store.candidates
 
-
             match candidate with
             | None -> return! RequestErrors.NOT_FOUND "Employee not found!" next ctx
             | Some(name, _, gId, dpl) ->
-                return!
-                    ThothSerializer.RespondJson
-                        { Name = name
-                          GuardianId = gId
-                          Diploma = dpl }
-                        Candidate.encode
-                        next
-                        ctx
+                let decodedName = decodeName name
+                let decodedGId = decodeIdentifier gId
+                let decodedDpl = decodeDiploma dpl
 
+                match decodedName, decodedGId, decodedDpl with
+                | Ok name, Ok gId, Ok dpl ->
+                    let candidate = { Candidate.Name = name; GuardianId = Some gId; Diploma = Some dpl }
+                    return! ThothSerializer.RespondJson candidate encoderCandidate next ctx
+                | _ ->
+                    return! RequestErrors.BAD_REQUEST "Invalid data for candidate!" next ctx
         }
 
 let addSession (name: string) : HttpHandler =
     fun next ctx ->
         task {
 
-            let! session = ThothSerializer.ReadBody ctx Session.decode
+            let! session = ThothSerializer.ReadBody ctx decoderSession
 
             match session with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
@@ -58,7 +67,7 @@ let addSession (name: string) : HttpHandler =
                    Minutes = minutes } ->
                 let store = ctx.GetService<Store>()
 
-                InMemoryDatabase.insert (name, date) (name, deep, date, minutes) store.sessions
+                InMemoryDatabase.insert (name, SessionDate.dateTimeValue date) (name, Deep.boolValue deep, SessionDate.dateTimeValue date, SessionLength.intValue minutes) store.sessions
                 |> ignore
 
 

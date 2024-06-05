@@ -13,12 +13,14 @@ module Identifier =
 
     let private identifierPattern = Regex(@"^\d{3}-[A-Z]{4}$")
 
-    // Constructs a correct Identifier given the correct input (string)
     let make rawIdentifier =
         rawIdentifier
         |> nonEmpty "Identifier may not be empty."
         |> Result.bind (matches identifierPattern "Identifier must start with three digits followed by a dash and end with four capital letters.")
         |> Result.map Identifier
+
+    let stringValue (Identifier identifier) =
+        identifier
 
 type Name = private | Name of string
 
@@ -35,6 +37,9 @@ module Name =
         |> Result.bind (matches namePattern "Name must consist of words separated by a single space and not end with a space.")
         |> Result.map Name
 
+    let stringValue (Name name) =
+        name
+
 type Diploma = private | Diploma of string
 
 let (|Diploma|) (Diploma diploma) = diploma
@@ -47,6 +52,9 @@ module Diploma =
         |> nonEmpty "Diploma may not be empty."
         |> Result.map Diploma
 
+    let stringValue (Diploma dpl) =
+        dpl
+
 type SessionDate = private | SessionDate of DateTime
 
 let (|SessionDate|) (SessionDate date) = date
@@ -57,6 +65,10 @@ module SessionDate =
     let make (date: DateTime) =
         Ok (SessionDate date)
 
+    let dateTimeValue (SessionDate date) =
+        date
+
+// Length of the session
 type SessionLength = private | SessionLength of int
 
 let (|SessionLength|) (SessionLength length) = length
@@ -72,15 +84,32 @@ module SessionLength =
         else
             Ok (SessionLength length)
 
-type Deep = private | Deep of float
+    let intValue (SessionLength length) =
+        length
 
-let (|Deep|) (Deep deep) = deep
+// Indicates the depth of the session
+type Deep = private | Shallow | Deep
+
+let (|DeepCase|) = function
+    | Shallow -> "shallow"
+    | Deep -> "deep"
 
 [<RequireQualifiedAccess>]
 module Deep =
 
     let make deep =
-        if deep < 0.0 then
-            Error "Deep value cannot be negative."
-        else
-            Ok (Deep deep)
+        match deep with
+        | "shallow" -> Ok Shallow
+        | "deep" -> Ok Deep
+        | _ -> Error "Invalid value for Deep. Valid values are 'shallow' and 'deep'."
+
+    
+    let encoderValue: Deep -> string = function
+        | Shallow -> "shallow"
+        | Deep -> "deep"
+
+    let boolValue (deep: Deep) : bool =
+        match deep with
+        | Shallow -> false
+        | Deep -> true
+
