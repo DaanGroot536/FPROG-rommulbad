@@ -59,6 +59,28 @@ let decoderDeep: Decoder<Deep> =
 let encoderDeep: Encoder<Deep> = Deep.encoderValue >> Encode.string
 
 // Serialize Candidate
+
+let decoderName : Decoder<Name> =
+    Decode.string |> Decode.andThen (fun name ->
+        match Name.make name with
+        | Ok decodedName -> Decode.succeed decodedName
+        | Error errorMessage -> Decode.fail errorMessage
+    )
+
+let decoderIdentifier : Decoder<Identifier> =
+    Decode.string |> Decode.andThen (fun identifier ->
+        match Identifier.make identifier with
+        | Ok decodedId -> Decode.succeed decodedId
+        | Error errorMessage -> Decode.fail errorMessage
+    )
+
+let decoderDiploma : Decoder<Diploma> =
+    Decode.string |> Decode.andThen (fun diploma ->
+        match Diploma.make diploma with
+        | Ok decodedDiploma -> Decode.succeed decodedDiploma
+        | Error errorMessage -> Decode.fail errorMessage
+    )
+
 let encoderCandidate: Encoder<Candidate> = fun candidate ->
     Encode.object [
         "name", encoderName candidate.Name
@@ -74,6 +96,7 @@ let decoderCandidate: Decoder<Candidate> =
         { Name = name; GuardianId = guardianId; Diploma = diploma }
     )
 
+// Serialize Session
 let encoderSession: Encoder<Session> = fun session ->
     Encode.object [
         "deep", encoderDeep session.Deep

@@ -6,8 +6,8 @@ open Microsoft.Extensions.DependencyInjection
 open Giraffe
 open Thoth.Json.Giraffe
 open Thoth.Json.Net
+open DataAccess.Store
 open Rommulbad
-open Rommulbad.Store
 
 let configureApp (app: IApplicationBuilder) =
     // Add Giraffe to the ASP.NET Core pipeline
