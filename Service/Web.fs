@@ -8,16 +8,16 @@ open Model.Common
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 open Service.Serialization
-open Application
+open Application.Session
 
 //TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<Store>()
+            let store = ctx.GetService<IStore>()
 
             let candidates =
-                InMemoryDatabase.all store.candidates
+                retrieveAllCandidates store
                 |> Seq.map (fun (name, _, gId, dpl) ->
                     let decodedNameResult = decodeName name
                     let decodedGIdResult = decodeIdentifier gId
@@ -36,9 +36,10 @@ let getCandidates: HttpHandler =
 let getCandidate (name: string) : HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<Store>()
+            let store = ctx.GetService<IStore>()
 
-            let candidate = InMemoryDatabase.lookup name store.candidates
+            let candidate =
+                getCandidate store name
 
             match candidate with
             | None -> return! RequestErrors.NOT_FOUND "Employee not found!" next ctx
@@ -85,9 +86,22 @@ let encodeSession (_, deep, date, minutes) =
 let getSessions (name: string) : HttpHandler =
     fun next ctx ->
         task {
-            let store = ctx.GetService<Store>()
+            let store = ctx.GetService<IStore>()
 
-            let sessions = InMemoryDatabase.filter (fun (n, _, _, _) -> n = name) store.sessions
+            let sessions = 
+                getSessions store
+                |> Seq.map (fun (name, deep, date, length) ->
+                    let decodedNameResult = decodeName name
+                    let decodedDeepResult = decoderDeep deep
+                    let decodedDateResult = decoderSessionDate date
+                    let decodedLengthResult = decoderSessionLength length
+
+                    match decodedNameResult, decodedDeepResult, decodedDplResult with
+                    | Ok decodedName, Ok decodedGId, Ok decodedDpl ->
+                        Some { Session.Name = decodedName; GuardianId = Some decodedGId; Diploma = Some decodedDpl }
+                    | _ -> None
+                )
+                |> Seq.choose id
 
             return! ThothSerializer.RespondJsonSeq sessions encodeSession next ctx
         }
