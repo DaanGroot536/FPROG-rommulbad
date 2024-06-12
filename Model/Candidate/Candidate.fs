@@ -9,5 +9,6 @@ open Common
 // - or the strings "A", "B", or "C".
 type Candidate =
     { Name: Name
+      DateOfBirth: SessionDate
       GuardianId: Option<Identifier>
       Diploma: Option<Diploma> }

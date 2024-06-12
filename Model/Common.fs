@@ -4,7 +4,7 @@ open System
 open System.Text.RegularExpressions
 open Model.Validation
 
-type Identifier = private | Identifier of string
+type Identifier = Identifier of string
 
 let (|Identifier|) (Identifier identifier) = identifier
 
@@ -22,7 +22,8 @@ module Identifier =
     let stringValue (Identifier identifier) =
         identifier
 
-type Name = private | Name of string
+type Name = Name of string
+
 
 let (|Name|) (Name name) = name
 
@@ -40,7 +41,7 @@ module Name =
     let stringValue (Name name) =
         name
 
-type Diploma = private | Diploma of string
+type Diploma = Diploma of string
 
 let (|Diploma|) (Diploma diploma) = diploma
 
@@ -55,7 +56,7 @@ module Diploma =
     let stringValue (Diploma dpl) =
         dpl
 
-type SessionDate = private | SessionDate of DateTime
+type SessionDate = SessionDate of DateTime
 
 let (|SessionDate|) (SessionDate date) = date
 
@@ -69,7 +70,7 @@ module SessionDate =
         date
 
 // Length of the session
-type SessionLength = private | SessionLength of int
+type SessionLength = SessionLength of int
 
 let (|SessionLength|) (SessionLength length) = length
 
@@ -88,7 +89,7 @@ module SessionLength =
         length
 
 // Indicates the depth of the session
-type Deep = private | Shallow | Deep
+type Deep = Shallow | Deep
 
 let (|DeepCase|) = function
     | Shallow -> "shallow"

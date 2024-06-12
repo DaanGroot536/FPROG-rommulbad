@@ -1,4 +1,4 @@
-module Rommulbad.Web
+module Service.Web
 
 open DataAccess.Database
 open DataAccess.Store
@@ -18,17 +18,7 @@ let getCandidates: HttpHandler =
 
             let candidates =
                 InMemoryDatabase.all store.candidates
-                |> Seq.map (fun (name, _, gId, dpl) ->
-                    let decodedNameResult = decodeName name
-                    let decodedGIdResult = decodeIdentifier gId
-                    let decodedDplResult = decodeDiploma dpl
-
-                    match decodedNameResult, decodedGIdResult, decodedDplResult with
-                    | Ok decodedName, Ok decodedGId, Ok decodedDpl ->
-                        Some { Candidate.Name = decodedName; GuardianId = Some decodedGId; Diploma = Some decodedDpl }
-                    | _ -> None
-                )
-                |> Seq.choose id
+                |> Seq.map id 
 
             return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
         }

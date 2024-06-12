@@ -2,6 +2,8 @@ module DataAccess.Store
 
 open System
 open DataAccess.Database
+open Model
+open Model.Common
 
 /// Here a store is created that contains the following tables with the following attributes
 ///
@@ -20,11 +22,11 @@ open DataAccess.Database
 /// - id (3 digits followed by dash and 4 letters, e.g. 133-LEET)
 /// - name (consists of words separated by spaces)
 type Store() =
-    member val candidates: InMemoryDatabase<string, string * DateTime * string * string> =
+    member val candidates: InMemoryDatabase<string, Candidate> =
         [ "Eleanor", DateTime(2016, 1, 9), "123-ABCD", "A"
           "Camiel", DateTime(2015, 11, 3), "123-ABCD", "C"
           "Lore", DateTime(2018, 8, 30), "9999-ZZZ", "" ]
-        |> Seq.map (fun (n, bd, gi, dpl) -> n, (n, bd, gi, dpl))
+        |> Seq.map (fun (n, bd, gi, dpl) -> n, { Name = Name n; DateOfBirth = SessionDate bd; GuardianId = Some (Identifier gi); Diploma = Some (Diploma dpl) })
         |> InMemoryDatabase.ofSeq
 
     member val sessions: InMemoryDatabase<string * DateTime, string * bool * DateTime * int> =
