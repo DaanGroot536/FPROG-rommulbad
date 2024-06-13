@@ -24,7 +24,6 @@ module Identifier =
 
 type Name = Name of string
 
-
 let (|Name|) (Name name) = name
 
 [<RequireQualifiedAccess>]
@@ -103,6 +102,11 @@ module Deep =
         | "shallow" -> Ok Shallow
         | "deep" -> Ok Deep
         | _ -> Error "Invalid value for Deep. Valid values are 'shallow' and 'deep'."
+
+    let fromBool deep =
+        match deep with
+        | false -> Ok Shallow
+        | true -> Ok Deep
 
     
     let encoderValue: Deep -> string = function

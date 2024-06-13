@@ -11,6 +11,7 @@ open Common
 /// Minutes cannot be negative or larger than 30
 /// Only the year, month and date of Date are used.
 type Session =
-    { Deep: Deep
+    { Name: Name
+      Deep: Deep
       Date: SessionDate
       Minutes: SessionLength }

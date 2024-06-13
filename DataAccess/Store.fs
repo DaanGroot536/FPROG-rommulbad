@@ -21,6 +21,7 @@ open Model.Common
 /// guardians
 /// - id (3 digits followed by dash and 4 letters, e.g. 133-LEET)
 /// - name (consists of words separated by spaces)
+
 type Store() =
     member val candidates: InMemoryDatabase<string, Candidate> =
         [ "Eleanor", DateTime(2016, 1, 9), "123-ABCD", "A"
@@ -29,7 +30,7 @@ type Store() =
         |> Seq.map (fun (n, bd, gi, dpl) -> n, { Name = Name n; DateOfBirth = SessionDate bd; GuardianId = Some (Identifier gi); Diploma = Some (Diploma dpl) })
         |> InMemoryDatabase.ofSeq
 
-    member val sessions: InMemoryDatabase<string * DateTime, string * bool * DateTime * int> =
+    member val sessions: InMemoryDatabase<string * DateTime, Session> =
         [ "Eleanor", false, DateTime(2024, 2, 2), 3
           "Eleanor", false, DateTime(2024, 3, 2), 5
           "Eleanor", false, DateTime(2024, 3, 2), 10
@@ -56,7 +57,10 @@ type Store() =
           "Camiel", true, DateTime(2023, 12, 17), 10
           "Lore", false, DateTime(2024, 6, 3), 1
           "Lore", false, DateTime(2024, 6, 10), 5 ]
-        |> Seq.map (fun (n, deep, date, min) -> (n, date), (n, deep, date, min))
+        |> Seq.map (fun (n, deep, date, min) -> 
+            match Deep.fromBool deep with
+            | Ok deepValue -> (n, date), {Name = Name n; Deep = deepValue; Date = SessionDate date ; Minutes = SessionLength min}
+            | Error e -> failwithf "Error creating Deep value: %A" e)
         |> InMemoryDatabase.ofSeq
 
     member val guardians: InMemoryDatabase<string, string * string> =

@@ -7,24 +7,8 @@ open Common
 type DecoderError =
     | Custom of string
 
-// Serialize Common
-let decodeName (name: string) : Result<Name, DecoderError> =
-    match Name.make name with
-    | Ok name -> Ok name
-    | Error validationMessage -> Error (DecoderError.Custom validationMessage)
-
 let encoderName: Encoder<Name> = fun (Name name) ->
     Encode.string name
-
-let decodeIdentifier (identifier: string): Result<Identifier, DecoderError> =
-    match Identifier.make identifier with
-    | Ok id -> Ok id
-    | Error validationMessage -> Error (DecoderError.Custom validationMessage)
-
-let decodeDiploma (diploma: string): Result<Diploma, DecoderError> =
-    match Diploma.make diploma with
-    | Ok dpl -> Ok dpl
-    | Error validationMessage -> Error (DecoderError.Custom validationMessage)
 
 let decoderSessionDate: Decoder<SessionDate> =
     Decode.datetime
@@ -93,7 +77,8 @@ let decoderCandidate: Decoder<Candidate> =
         let name = get.Required.Field "name" decoderName
         let guardianId = get.Optional.Field "guardianId" decoderIdentifier
         let diploma = get.Optional.Field "diploma" decoderDiploma
-        { Name = name; GuardianId = guardianId; Diploma = diploma }
+        let dateOfBirth = get.Required.Field "dateOfBirth" decoderSessionDate
+        { Name = name; DateOfBirth = dateOfBirth; GuardianId = guardianId; Diploma = diploma }
     )
 
 // Serialize Session
@@ -109,5 +94,6 @@ let decoderSession: Decoder<Session> =
         let deep = get.Required.Field "deep" decoderDeep
         let date = get.Required.Field "sessionDate" decoderSessionDate
         let length = get.Required.Field "sessionLength" decoderSessionLength
-        { Deep = deep; Date = date; Minutes = length }
+        let name = get.Required.Field "name" decoderName
+        { Name = name; Deep = deep; Date = date; Minutes = length }
     )
