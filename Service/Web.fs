@@ -208,6 +208,54 @@ let getTotalEligibleMinutes (name: string, diploma: string) : HttpHandler =
             return! ThothSerializer.RespondJson total Encode.int next ctx
         }
 
+let awardDiploma (rawCandidateName: string, rawDiploma: string) : HttpHandler =
+    fun next ctx ->
+        task {
+            let store = ctx.GetService<Store>()
+
+            // Retrieve the candidate from the store
+            let candidateOpt = InMemoryDatabase.lookup rawCandidateName store.candidates
+
+            match candidateOpt with
+            | Some candidate ->
+                let shallowOk, minMinutes, totalRequired =
+                    match rawDiploma with
+                    | "A" -> true, 1, 120
+                    | "B" -> false, 10, 150
+                    | "C" -> false, 15, 180
+                    | _ -> false, 0, 0
+
+                if totalRequired = 0 then
+                    return! RequestErrors.BAD_REQUEST "Invalid diploma type" next ctx
+                else
+                    let filter (session: Session) =
+                        (Deep.boolValue session.Deep || shallowOk)
+                        && (SessionLength.intValue session.Minutes >= minMinutes)
+                        && (Name.stringValue session.Name = rawCandidateName)
+
+                    let totalMinutes =
+                        InMemoryDatabase.filter filter store.sessions
+                        |> Seq.map (fun session -> SessionLength.intValue session.Minutes)
+                        |> Seq.sum
+
+                    let newDiploma =
+                        match Diploma.make rawDiploma with
+                        | Ok diploma -> diploma
+
+                    let updatedCandidate =
+                        { candidate with Diploma = Some (newDiploma) }
+
+                    if totalMinutes >= totalRequired then
+                        match InMemoryDatabase.update (Name.stringValue candidate.Name) updatedCandidate store.candidates with
+                        | _ -> return! text $"Diploma {rawDiploma} awarded successfully" next ctx
+
+                    else
+                        return! RequestErrors.FORBIDDEN "Not enough eligible minutes for the diploma" next ctx
+
+            | None ->
+                return! RequestErrors.NOT_FOUND "Candidate not found!" next ctx
+        }
+
 
 
 let routes: HttpHandler =
@@ -218,7 +266,7 @@ let routes: HttpHandler =
           GET >=> route "/guardian" >=> getGuardians
           POST >=> route "/guardian" >=> addGuardian
           GET >=> routef "/guardian/%s/assigncandidate/%s" assignCandidate
-          //POST >=> routef "/candidate/%s/award/%s" >=> awardDiploma
+          POST >=> routef "/candidate/%s/award/%s" awardDiploma
           POST >=> routef "/candidate/%s/session" addSession
           GET >=> routef "/candidate/%s/session" getSessions
           GET >=> routef "/candidate/%s/session/total" getTotalMinutes
