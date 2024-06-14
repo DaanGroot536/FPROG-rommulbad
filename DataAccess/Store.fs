@@ -67,5 +67,5 @@ type Store() =
         [ "123-ABCD", "Jan Janssen"
           "234-FDEG", "Marie Moor"
           "999-ZZZZ", "Margeet van Lankerveld" ]
-        |> Seq.map (fun (id, name) -> name, {Id = Identifier id; Name = Name name; Candidates = None})
+        |> Seq.map (fun (id, name) -> id, {Id = Identifier id; Name = Name name; Candidates = None})
         |> InMemoryDatabase.ofSeq

@@ -83,6 +83,47 @@ let addGuardian : HttpHandler =
                 return! text "Guardian added successfully" next ctx
         }
 
+let addCandidate : HttpHandler =
+    fun next ctx ->
+        task {
+            let! candidateResult = ThothSerializer.ReadBody ctx decoderCandidate
+
+            match candidateResult with
+            | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
+            | Ok candidate ->
+                let store = ctx.GetService<Store>()
+
+                InMemoryDatabase.insert (Name.stringValue candidate.Name) candidate store.candidates
+                |> ignore
+
+                return! text "Guardian added successfully" next ctx
+        }
+
+let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHandler =
+    fun next ctx ->
+        task {
+            let store = ctx.GetService<Store>()
+            let guardianOpt = InMemoryDatabase.lookup rawGuardianId store.guardians
+            let candidateOpt = InMemoryDatabase.lookup rawCandidateName store.candidates
+
+            match guardianOpt, candidateOpt with
+            | Some guardian, Some candidate ->
+                let updatedCandidates = 
+                    match guardian.Candidates with
+                    | Some candidates -> Some (candidate :: candidates)
+                    | None -> Some [candidate]
+
+                let updatedGuardian =
+                    { guardian with Candidates = updatedCandidates }
+
+                match InMemoryDatabase.update (Identifier.stringValue guardian.Id) updatedGuardian store.guardians with
+                | _ -> return! text "Guardian added successfully" next ctx
+            | _ -> 
+                return! RequestErrors.NOT_FOUND "Guardian or candidate not found" next ctx
+        }
+
+
+
 let encodeSession (_, deep, date, minutes) =
     Encode.object
         [ "date", Encode.datetime date
@@ -96,7 +137,7 @@ let getSessions (name: string) : HttpHandler =
             let store = ctx.GetService<Store>()
 
             let sessions = 
-                InMemoryDatabase.all store.sessions
+                InMemoryDatabase.filter (fun session -> session.Name = Name name) store.sessions
                 |> Seq.map id
 
             return! ThothSerializer.RespondJsonSeq sessions encoderSession next ctx
@@ -172,9 +213,11 @@ let getTotalEligibleMinutes (name: string, diploma: string) : HttpHandler =
 let routes: HttpHandler =
     choose
         [ GET >=> route "/candidate" >=> getCandidates
+          POST >=> route "/candidate" >=> addCandidate
           GET >=> routef "/candidate/%s" getCandidate
           GET >=> route "/guardian" >=> getGuardians
           POST >=> route "/guardian" >=> addGuardian
+          GET >=> routef "/guardian/%s/assigncandidate/%s" assignCandidate
           //POST >=> routef "/candidate/%s/award/%s" >=> awardDiploma
           POST >=> routef "/candidate/%s/session" addSession
           GET >=> routef "/candidate/%s/session" getSessions
