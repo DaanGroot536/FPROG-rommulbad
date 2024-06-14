@@ -8,16 +8,16 @@ open Model.Common
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 open Service.Serialization
+open Application.Candidate
+open DataAccess.Candidate
 
 //TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
-
-            let candidates =
-                InMemoryDatabase.all store.candidates
-                |> Seq.map id 
+            let candidateAccess = CandidateDataAccess(store)
+            let candidates = getAllCandidates candidateAccess
 
             return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
         }
@@ -96,7 +96,7 @@ let addCandidate : HttpHandler =
                 InMemoryDatabase.insert (Name.stringValue candidate.Name) candidate store.candidates
                 |> ignore
 
-                return! text "Guardian added successfully" next ctx
+                return! text "Candidate added successfully" next ctx
         }
 
 let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHandler =
@@ -213,7 +213,6 @@ let awardDiploma (rawCandidateName: string, rawDiploma: string) : HttpHandler =
         task {
             let store = ctx.GetService<Store>()
 
-            // Retrieve the candidate from the store
             let candidateOpt = InMemoryDatabase.lookup rawCandidateName store.candidates
 
             match candidateOpt with
@@ -260,15 +259,22 @@ let awardDiploma (rawCandidateName: string, rawDiploma: string) : HttpHandler =
 
 let routes: HttpHandler =
     choose
-        [ GET >=> route "/candidate" >=> getCandidates
+        [ 
+          //Candidates
+          GET >=> route "/candidate" >=> getCandidates
           POST >=> route "/candidate" >=> addCandidate
           GET >=> routef "/candidate/%s" getCandidate
-          GET >=> route "/guardian" >=> getGuardians
-          POST >=> route "/guardian" >=> addGuardian
-          GET >=> routef "/guardian/%s/assigncandidate/%s" assignCandidate
           POST >=> routef "/candidate/%s/award/%s" awardDiploma
+
+          //Sessions
           POST >=> routef "/candidate/%s/session" addSession
           GET >=> routef "/candidate/%s/session" getSessions
           GET >=> routef "/candidate/%s/session/total" getTotalMinutes
           GET >=> routef "/candidate/%s/session/%s" getEligibleSessions
-          GET >=> routef "/candidate/%s/session/%s/total" getTotalEligibleMinutes ]
+          GET >=> routef "/candidate/%s/session/%s/total" getTotalEligibleMinutes
+
+          //Guardians
+          GET >=> route "/guardian" >=> getGuardians
+          POST >=> route "/guardian" >=> addGuardian
+          GET >=> routef "/guardian/%s/assigncandidate/%s" assignCandidate
+          ]
