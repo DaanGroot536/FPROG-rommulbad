@@ -4,7 +4,6 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Candidate.fs" />
     <Compile Include="Database.fs" />
     <Compile Include="Store.fs" />
   </ItemGroup>

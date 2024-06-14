@@ -10,6 +10,9 @@ type DecoderError =
 let encoderName: Encoder<Name> = fun (Name name) ->
     Encode.string name
 
+let encoderIdentifier: Encoder<Identifier> = fun (Identifier id) ->
+    Encode.string id
+
 let decoderSessionDate: Decoder<SessionDate> =
     Decode.datetime
     |> Decode.andThen (fun d ->
@@ -96,4 +99,30 @@ let decoderSession: Decoder<Session> =
         let length = get.Required.Field "sessionLength" decoderSessionLength
         let name = get.Required.Field "name" decoderName
         { Name = name; Deep = deep; Date = date; Minutes = length }
+    )
+
+let encoderCandidates: Encoder<Option<List<Candidate>>> = fun candidates ->
+    match candidates with
+    | Some c -> Encode.list (List.map encoderCandidate c)
+    | None -> Encode.nil
+    
+
+let decoderCandidates: Decoder<List<Candidate>> =
+    Decode.list decoderCandidate
+
+// Serialize Guardian
+let encoderGuardian: Encoder<Guardian> = fun guardian ->
+    Encode.object [
+        "id", encoderIdentifier guardian.Id
+        "name", encoderName guardian.Name
+        "candidates", encoderCandidates guardian.Candidates
+    ]
+
+let decoderGuardian: Decoder<Guardian> =
+    Decode.object (fun get ->
+        {
+            Id = get.Required.Field "id" decoderIdentifier
+            Name = get.Required.Field "name" decoderName
+            Candidates = get.Optional.Field "candidates" decoderCandidates
+        }
     )

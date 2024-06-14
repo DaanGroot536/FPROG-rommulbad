@@ -63,9 +63,9 @@ type Store() =
             | Error e -> failwithf "Error creating Deep value: %A" e)
         |> InMemoryDatabase.ofSeq
 
-    member val guardians: InMemoryDatabase<string, string * string> =
+    member val guardians: InMemoryDatabase<string, Guardian> =
         [ "123-ABCD", "Jan Janssen"
           "234-FDEG", "Marie Moor"
           "999-ZZZZ", "Margeet van Lankerveld" ]
-        |> Seq.map (fun t -> fst t, t)
+        |> Seq.map (fun (id, name) -> name, {Id = Identifier id; Name = Name name; Candidates = None})
         |> InMemoryDatabase.ofSeq

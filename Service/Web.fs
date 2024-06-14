@@ -8,7 +8,6 @@ open Model.Common
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 open Service.Serialization
-open Application.Session
 
 //TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
@@ -21,6 +20,18 @@ let getCandidates: HttpHandler =
                 |> Seq.map id 
 
             return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
+        }
+
+let getGuardians: HttpHandler =
+    fun next ctx ->
+        task {
+            let store = ctx.GetService<Store>()
+
+            let guardians =
+                InMemoryDatabase.all store.guardians
+                |> Seq.map id 
+
+            return! ThothSerializer.RespondJsonSeq guardians encoderGuardian next ctx
         }
 
 let getCandidate (name: string) : HttpHandler =
@@ -54,6 +65,22 @@ let addSession (name: string) : HttpHandler =
 
 
                 return! text "OK" next ctx
+        }
+
+let addGuardian : HttpHandler =
+    fun next ctx ->
+        task {
+            let! guardianResult = ThothSerializer.ReadBody ctx decoderGuardian
+
+            match guardianResult with
+            | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
+            | Ok guardian ->
+                let store = ctx.GetService<Store>()
+
+                InMemoryDatabase.insert (Identifier.stringValue guardian.Id) guardian store.guardians
+                |> ignore
+
+                return! text "Guardian added successfully" next ctx
         }
 
 let encodeSession (_, deep, date, minutes) =
@@ -146,7 +173,8 @@ let routes: HttpHandler =
     choose
         [ GET >=> route "/candidate" >=> getCandidates
           GET >=> routef "/candidate/%s" getCandidate
-          //POST >=> routef "/candidate/%s/guardian" >=> addGuardian
+          GET >=> route "/guardian" >=> getGuardians
+          POST >=> route "/guardian" >=> addGuardian
           //POST >=> routef "/candidate/%s/award/%s" >=> awardDiploma
           POST >=> routef "/candidate/%s/session" addSession
           GET >=> routef "/candidate/%s/session" getSessions

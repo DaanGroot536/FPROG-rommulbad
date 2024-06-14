@@ -9,4 +9,4 @@ open Common
 type Guardian =
     { Id: Identifier
       Name: Name
-      Candidates: List<Candidate> }
+      Candidates: Option<List<Candidate>> }
