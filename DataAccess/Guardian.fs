@@ -11,7 +11,6 @@ type GuardianDataAccess(store: Store) =
 
         member this.GetAllGuardians () =
             InMemoryDatabase.all store.guardians
-            |> Seq.toList
 
         member this.StoreGuardian (guardian: Guardian) =
             match InMemoryDatabase.insert (Identifier.stringValue guardian.Id) guardian store.guardians with

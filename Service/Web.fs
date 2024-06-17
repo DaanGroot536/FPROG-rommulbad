@@ -30,11 +30,10 @@ let getGuardians: HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
+            let dataAccess = GuardianDataAccess(store)
 
             let guardians =
-                InMemoryDatabase.all store.guardians
-                |> Seq.map id 
-
+                getAllGuardians dataAccess
             return! ThothSerializer.RespondJsonSeq guardians encoderGuardian next ctx
         }
 

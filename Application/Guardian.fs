@@ -5,13 +5,14 @@ open Model.Common
 open Application.Candidate
 
 type IGuardianDataAccess =
-    abstract GetAllGuardians : unit -> List<Guardian>
+    abstract GetAllGuardians : unit -> Guardian seq
     abstract GetGuardian : string -> Option<Guardian>
     abstract StoreGuardian : Guardian -> Result<unit, 'TError>
     abstract UpdateGuardian : Guardian -> unit
 
 let getAllGuardians (dataAccess: IGuardianDataAccess) =
     dataAccess.GetAllGuardians()
+    |> Seq.toList
 
 let getGuardian (dataAccess: IGuardianDataAccess) (id: string) =
     dataAccess.GetGuardian(id)
