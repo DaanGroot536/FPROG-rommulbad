@@ -1,7 +1,5 @@
 ﻿namespace Model
 
-open Thoth.Json.Net
-open Thoth.Json.Giraffe
 open System
 open Common
 

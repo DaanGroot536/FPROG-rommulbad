@@ -1,6 +1,5 @@
 ﻿namespace Model
 
-open Thoth.Json.Net
 open Common
 
 /// A guardian has an Id (3 digits followed by a dash and 4 letters),

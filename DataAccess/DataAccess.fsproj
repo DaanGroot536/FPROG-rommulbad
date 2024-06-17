@@ -6,9 +6,9 @@
   <ItemGroup>
     <Compile Include="Database.fs" />
     <Compile Include="Store.fs" />
-    <Compile Include="Session.fs" />
-    <Compile Include="Candidate.fs" />
-    <Compile Include="Guardian.fs" />
+    <Compile Include="Session\Session.fs" />
+    <Compile Include="Candidate\Candidate.fs" />
+    <Compile Include="Candidate\Guardian.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Application\Application.fsproj" />
