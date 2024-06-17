@@ -2,10 +2,11 @@
 
 open Model
 open Model.Common
+open Application.Errors
 
 type ISessionDataAccess =
     abstract GetAllSessions : unit -> Session seq
-    abstract StoreSession : Session -> Result<unit, 'TError>
+    abstract StoreSession : Session -> Result<unit, StoreError>
     abstract GetSessionsByName : string -> Session seq
     abstract GetTotalMinutes : string -> Session seq
     abstract GetEligebleSessions : (Session -> bool) -> Session seq
@@ -39,6 +40,9 @@ let getEligibleSessions (dataAccess: ISessionDataAccess) (name: string) (diploma
         | _ -> 15
 
     let filter (session: Session) = (Deep.boolValue session.Deep || shallowOk) && (SessionLength.intValue session.Minutes >= minMinutes) && (Name.stringValue session.Name = name)
+    dataAccess.GetEligebleSessions filter
+
+let filterSessions (dataAccess: ISessionDataAccess) filter =
     dataAccess.GetEligebleSessions filter
 
 let getTotalEligebleSessions (dataAccess: ISessionDataAccess) (name: string) (diploma: string) =

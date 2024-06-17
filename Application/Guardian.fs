@@ -3,11 +3,12 @@
 open Model
 open Model.Common
 open Application.Candidate
+open Application.Errors
 
 type IGuardianDataAccess =
     abstract GetAllGuardians : unit -> Guardian seq
     abstract GetGuardian : string -> Option<Guardian>
-    abstract StoreGuardian : Guardian -> Result<unit, 'TError>
+    abstract StoreGuardian : Guardian -> Result<unit, StoreError>
     abstract UpdateGuardian : Guardian -> unit
 
 let getAllGuardians (dataAccess: IGuardianDataAccess) =

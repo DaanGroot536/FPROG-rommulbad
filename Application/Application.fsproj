@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Errors.fs" />
     <Compile Include="Session.fs" />
     <Compile Include="Candidate.fs" />
     <Compile Include="Guardian.fs" />

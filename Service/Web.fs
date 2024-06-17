@@ -1,16 +1,12 @@
 module Service.Web
 
-open DataAccess.Database
 open DataAccess.Store
 open Giraffe
-open Model
-open Model.Common
 open Thoth.Json.Net
 open Thoth.Json.Giraffe
 open Service.Serialization
-open Application.Candidate
-open Application.Session
 open Application.Guardian
+open Application.Errors
 open DataAccess.Candidate
 open DataAccess.Session
 open DataAccess.Guardian
@@ -63,7 +59,7 @@ let addSession (name: string) : HttpHandler =
                 let dataAccess = SessioneDataAccess(store)
                 match Application.Session.storeSession dataAccess session with
                 | Ok msg -> return! text "Session added successfully" next ctx
-                | _ -> return! text "Failed to store Session" next ctx
+                | Error (InsertError msg) -> return! text msg next ctx
         }
 
 let addGuardian : HttpHandler =
@@ -161,7 +157,6 @@ let getTotalEligibleMinutes (name: string, diploma: string) : HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
-
             let dataAccess = SessioneDataAccess(store)
             
             let total =
@@ -174,47 +169,12 @@ let awardDiploma (rawCandidateName: string, rawDiploma: string) : HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
+            let dataAccessS = SessioneDataAccess(store)
+            let dataAccessC = CandidateDataAccess(store)
 
-            let candidateOpt = InMemoryDatabase.lookup rawCandidateName store.candidates
-
-            match candidateOpt with
-            | Some candidate ->
-                let shallowOk, minMinutes, totalRequired =
-                    match rawDiploma with
-                    | "A" -> true, 1, 120
-                    | "B" -> false, 10, 150
-                    | "C" -> false, 15, 180
-                    | _ -> false, 0, 0
-
-                if totalRequired = 0 then
-                    return! RequestErrors.BAD_REQUEST "Invalid diploma type" next ctx
-                else
-                    let filter (session: Session) =
-                        (Deep.boolValue session.Deep || shallowOk)
-                        && (SessionLength.intValue session.Minutes >= minMinutes)
-                        && (Name.stringValue session.Name = rawCandidateName)
-
-                    let totalMinutes =
-                        InMemoryDatabase.filter filter store.sessions
-                        |> Seq.map (fun session -> SessionLength.intValue session.Minutes)
-                        |> Seq.sum
-
-                    let newDiploma =
-                        match Diploma.make rawDiploma with
-                        | Ok diploma -> diploma
-
-                    let updatedCandidate =
-                        { candidate with Diploma = Some (newDiploma) }
-
-                    if totalMinutes >= totalRequired then
-                        match InMemoryDatabase.update (Name.stringValue candidate.Name) updatedCandidate store.candidates with
-                        | _ -> return! text $"Diploma {rawDiploma} awarded successfully" next ctx
-
-                    else
-                        return! RequestErrors.FORBIDDEN "Not enough eligible minutes for the diploma" next ctx
-
-            | None ->
-                return! RequestErrors.NOT_FOUND "Candidate not found!" next ctx
+            match Application.Candidate.awardDiploma dataAccessC dataAccessS rawCandidateName rawDiploma with
+            | Ok msg -> return! text $"Succesfully awarded {rawDiploma} to {rawCandidateName}" next ctx
+            | Error msg -> return! RequestErrors.BAD_REQUEST msg next ctx
         }
 
 
