@@ -11,7 +11,6 @@ open DataAccess.Candidate
 open DataAccess.Session
 open DataAccess.Guardian
 
-//TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
     fun next ctx ->
         task {
@@ -21,6 +20,17 @@ let getCandidates: HttpHandler =
 
             return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
         }
+
+let getEligebleCandidatesForDiploma (diploma: string) : HttpHandler =
+    fun next ctx ->
+    task {
+        let store = ctx.GetService<Store>()
+        let datAccessC = CandidateDataAccess(store)
+        let datAccessS = SessioneDataAccess(store)
+        let candidates = Application.Candidate.getEligebleCandidatesForDiploma datAccessC datAccessS diploma
+
+        return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
+    }
 
 let getGuardians: HttpHandler =
     fun next ctx ->
@@ -161,12 +171,12 @@ let awardDiploma (rawCandidateName: string, rawDiploma: string) : HttpHandler =
             let dataAccessS = SessioneDataAccess(store)
             let dataAccessC = CandidateDataAccess(store)
 
-            match Application.Candidate.awardDiploma dataAccessC dataAccessS rawCandidateName rawDiploma with
-            | Ok msg -> return! text $"Succesfully awarded {rawDiploma} to {rawCandidateName}" next ctx
+            match Application.Candidate.isEligeble dataAccessC dataAccessS rawCandidateName rawDiploma with
+            | Ok msg ->
+                match Application.Candidate.awardDiploma dataAccessC rawCandidateName with
+                | _ -> return! text $"Succesfully awarded {rawDiploma} to {rawCandidateName}" next ctx
             | Error msg -> return! RequestErrors.BAD_REQUEST msg next ctx
         }
-
-
 
 let routes: HttpHandler =
     choose
@@ -176,6 +186,7 @@ let routes: HttpHandler =
           POST >=> route "/candidate" >=> addCandidate
           GET >=> routef "/candidate/%s" getCandidate
           POST >=> routef "/candidate/%s/award/%s" awardDiploma
+          GET >=> routef "/candidate/eligeble/%s" getEligebleCandidatesForDiploma
 
           //Sessions
           POST >=> routef "/candidate/%s/session" addSession

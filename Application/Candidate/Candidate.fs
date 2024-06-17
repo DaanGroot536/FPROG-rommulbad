@@ -5,7 +5,6 @@ open Model.Common
 open Application.Session
 open Application.Errors
 
-
 type ICandidateDataAccess =
     abstract GetAllCandidates : unit -> List<Candidate>
     abstract StoreCandidate : Candidate -> Result<unit, StoreError>
@@ -14,14 +13,14 @@ type ICandidateDataAccess =
 
 let getAllCandidates (dataAccess: ICandidateDataAccess) =
     dataAccess.GetAllCandidates()
-
+    
 let storeCandidate (dataAccess: ICandidateDataAccess) candidate =
     dataAccess.StoreCandidate(candidate)
 
 let getCandidate (dataAccess: ICandidateDataAccess) name = 
     dataAccess.GetCandidate(name)
 
-let awardDiploma (dataAccessC: ICandidateDataAccess) (dataAccessS: ISessionDataAccess) (rawCandidateName: string) (rawDiploma: string) =
+let isEligeble (dataAccessC: ICandidateDataAccess) (dataAccessS: ISessionDataAccess) (rawCandidateName: string) (rawDiploma: string) =
     let candidateOpt = getCandidate dataAccessC rawCandidateName
 
     match candidateOpt with
@@ -50,16 +49,36 @@ let awardDiploma (dataAccessC: ICandidateDataAccess) (dataAccessS: ISessionDataA
                 match Diploma.make rawDiploma with
                 | Ok diploma -> diploma
 
-            let updatedCandidate =
-                { candidate with Diploma = Some (newDiploma) }
+
 
             if totalMinutes >= totalRequired then
-                match dataAccessC.UpdateCandidate updatedCandidate with
-                | _ -> Ok ($"Diploma {rawDiploma} awarded successfully")
-
+                Ok ("Candidate is eligeble for this diploma!")
             else
                 Error ("Not enough eligible minutes for the diploma")
 
     | None ->
         Error ("Candidate not found!")
+
+let getEligebleCandidatesForDiploma (dataAccessC: ICandidateDataAccess) (dataAccessS: ISessionDataAccess) (diploma: string) =
+    let candidates = getAllCandidates dataAccessC
+    candidates
+    |> Seq.filter (fun candidate ->
+        match isEligeble dataAccessC dataAccessS (Name.stringValue candidate.Name) diploma with
+        | Ok _ -> true
+        | Error _ -> false)
+    |> Seq.toList
+
+let awardDiploma (dataAccessC: ICandidateDataAccess) (name: string) (diploma: string) =
+    let candidateOpt = getCandidate dataAccessC name
+    match candidateOpt with
+    | Some candidate ->
+        let updatedCandidate =
+            { candidate with Diploma = Some (Diploma diploma) }
+        match dataAccessC.UpdateCandidate updatedCandidate with
+        | _ -> Ok ($"Diploma {diploma} awarded successfully")
+    | None -> Error ("Candidate not found")
+
+
+
+    
     
