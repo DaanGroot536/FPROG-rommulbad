@@ -21,7 +21,7 @@ let getCandidates: HttpHandler =
         task {
             let store = ctx.GetService<Store>()
             let candidateAccess = CandidateDataAccess(store)
-            let candidates = getAllCandidates candidateAccess
+            let candidates = Application.Candidate.getAllCandidates candidateAccess
 
             return! ThothSerializer.RespondJsonSeq candidates encoderCandidate next ctx
         }
@@ -44,7 +44,7 @@ let getCandidate (name: string) : HttpHandler =
             let store = ctx.GetService<Store>()
             let candidateAccess = CandidateDataAccess(store)
 
-            let candidate = getCandidate candidateAccess name
+            let candidate = Application.Candidate.getCandidate candidateAccess name
             match candidate with
             | Some candidate ->
                     return! ThothSerializer.RespondJson candidate encoderCandidate next ctx
@@ -62,7 +62,7 @@ let addSession (name: string) : HttpHandler =
             | Ok session ->
                 let store = ctx.GetService<Store>()
                 let dataAccess = SessioneDataAccess(store)
-                match storeSession dataAccess session with
+                match Application.Session.storeSession dataAccess session with
                 | Ok msg -> return! text "Session added successfully" next ctx
                 | _ -> return! text "Failed to store Session" next ctx
         }
@@ -77,7 +77,7 @@ let addGuardian : HttpHandler =
             | Ok guardian ->
                 let store = ctx.GetService<Store>()
                 let dataAccess = GuardianDataAccess(store)
-                match storeGuardian dataAccess guardian with
+                match Application.Guardian.storeGuardian dataAccess guardian with
                 | Ok msg -> return! text "Guardian added successfully" next ctx
                 | _ -> return! text "Failed to store Guardian" next ctx
                 
@@ -93,7 +93,7 @@ let addCandidate : HttpHandler =
             | Ok candidate ->
                 let store = ctx.GetService<Store>()
                 let dataAccess = CandidateDataAccess(store)
-                match storeCandidate dataAccess candidate with
+                match Application.Candidate.storeCandidate dataAccess candidate with
                 | Ok msg -> return! text "Candidate added successfully" next ctx
                 | _ -> return! text "Failed to store Candidate" next ctx
                 
@@ -105,7 +105,7 @@ let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHand
             let store = ctx.GetService<Store>()
             let dataAccessC = CandidateDataAccess(store)
             let dataAccessG = GuardianDataAccess(store)
-            match assignCandidate dataAccessG dataAccessC rawGuardianId rawCandidateName with
+            match Application.Guardian.assignCandidate dataAccessG dataAccessC rawGuardianId rawCandidateName with
             | Ok msg -> return! text "Candidate assigned successfully" next ctx
             | _ -> return! RequestErrors.NOT_FOUND "Guardian or candidate not found" next ctx
         }
@@ -123,9 +123,10 @@ let getSessions (name: string) : HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
+            let dataAccess = SessioneDataAccess(store)
 
             let sessions = 
-                InMemoryDatabase.filter (fun session -> session.Name = Name name) store.sessions
+                Application.Session.getSessionsByName dataAccess name
                 |> Seq.map id
 
             return! ThothSerializer.RespondJsonSeq sessions encoderSession next ctx
@@ -135,11 +136,10 @@ let getTotalMinutes (name: string) : HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
+            let dataAccess = SessioneDataAccess(store)
 
             let total =
-                InMemoryDatabase.filter (fun session -> session.Name = Name name) store.sessions
-                |> Seq.map (fun session -> SessionLength.intValue session.Minutes)
-                |> Seq.sum
+                Application.Session.getTotalMinutes dataAccess name
 
             return! ThothSerializer.RespondJson total Encode.int next ctx
         }
@@ -150,21 +150,10 @@ let getEligibleSessions (name: string, diploma: string) : HttpHandler =
         task {
 
             let store = ctx.GetService<Store>()
-
-            let shallowOk =
-                match diploma with
-                | "A" -> true
-                | _ -> false
-
-            let minMinutes =
-                match diploma with
-                | "A" -> 1
-                | "B" -> 10
-                | _ -> 15
-
-            let filter (session: Session) = (Deep.boolValue session.Deep || shallowOk) && (SessionLength.intValue session.Minutes >= minMinutes) && (Name.stringValue session.Name = name)
-
-            let sessions = InMemoryDatabase.filter filter store.sessions
+            let dataAccess = SessioneDataAccess(store)
+            
+            let sessions =
+                Application.Session.getEligibleSessions dataAccess name diploma
 
             return! ThothSerializer.RespondJsonSeq sessions encoderSession next ctx
         }
@@ -174,24 +163,10 @@ let getTotalEligibleMinutes (name: string, diploma: string) : HttpHandler =
         task {
             let store = ctx.GetService<Store>()
 
-            let shallowOk =
-                match diploma with
-                | "A" -> true
-                | _ -> false
-
-            let minMinutes =
-                match diploma with
-                | "A" -> 1
-                | "B" -> 10
-                | _ -> 15
-
-            let filter (session: Session) = (Deep.boolValue session.Deep || shallowOk) && (SessionLength.intValue session.Minutes >= minMinutes) && (Name.stringValue session.Name = name)
-
-
+            let dataAccess = SessioneDataAccess(store)
+            
             let total =
-                InMemoryDatabase.filter filter store.sessions
-                |> Seq.map (fun session -> SessionLength.intValue session.Minutes)
-                |> Seq.sum
+                Application.Session.getTotalEligebleSessions dataAccess name diploma
 
             return! ThothSerializer.RespondJson total Encode.int next ctx
         }
