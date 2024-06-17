@@ -10,8 +10,10 @@ open Thoth.Json.Giraffe
 open Service.Serialization
 open Application.Candidate
 open Application.Session
+open Application.Guardian
 open DataAccess.Candidate
 open DataAccess.Session
+open DataAccess.Guardian
 
 //TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
@@ -74,11 +76,11 @@ let addGuardian : HttpHandler =
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
             | Ok guardian ->
                 let store = ctx.GetService<Store>()
-
-                InMemoryDatabase.insert (Identifier.stringValue guardian.Id) guardian store.guardians
-                |> ignore
-
-                return! text "Guardian added successfully" next ctx
+                let dataAccess = GuardianDataAccess(store)
+                match storeGuardian dataAccess guardian with
+                | Ok msg -> return! text "Guardian added successfully" next ctx
+                | _ -> return! text "Failed to store Guardian" next ctx
+                
         }
 
 let addCandidate : HttpHandler =
@@ -101,23 +103,11 @@ let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHand
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
-            let guardianOpt = InMemoryDatabase.lookup rawGuardianId store.guardians
-            let candidateOpt = InMemoryDatabase.lookup rawCandidateName store.candidates
-
-            match guardianOpt, candidateOpt with
-            | Some guardian, Some candidate ->
-                let updatedCandidates = 
-                    match guardian.Candidates with
-                    | Some candidates -> Some (candidate :: candidates)
-                    | None -> Some [candidate]
-
-                let updatedGuardian =
-                    { guardian with Candidates = updatedCandidates }
-
-                match InMemoryDatabase.update (Identifier.stringValue guardian.Id) updatedGuardian store.guardians with
-                | _ -> return! text "Guardian added successfully" next ctx
-            | _ -> 
-                return! RequestErrors.NOT_FOUND "Guardian or candidate not found" next ctx
+            let dataAccessC = CandidateDataAccess(store)
+            let dataAccessG = GuardianDataAccess(store)
+            match assignCandidate dataAccessG dataAccessC rawGuardianId rawCandidateName with
+            | Ok msg -> return! text "Candidate assigned successfully" next ctx
+            | _ -> return! RequestErrors.NOT_FOUND "Guardian or candidate not found" next ctx
         }
 
 

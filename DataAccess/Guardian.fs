@@ -16,3 +16,11 @@ type GuardianDataAccess(store: Store) =
         member this.StoreGuardian (guardian: Guardian) =
             match InMemoryDatabase.insert (Identifier.stringValue guardian.Id) guardian store.guardians with
             | Ok _ -> Ok ()
+
+        member this.UpdateGuardian (guardian: Guardian) =
+            InMemoryDatabase.update (Identifier.stringValue guardian.Id) guardian store.guardians
+
+        member this.GetGuardian (id: string) =
+            InMemoryDatabase.lookup id store.guardians
+
+
