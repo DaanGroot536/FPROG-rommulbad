@@ -103,15 +103,6 @@ let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHand
             | _ -> return! RequestErrors.NOT_FOUND "Guardian or candidate not found" next ctx
         }
 
-
-
-let encodeSession (_, deep, date, minutes) =
-    Encode.object
-        [ "date", Encode.datetime date
-          "deep", Encode.bool deep
-          "minutes", Encode.int minutes ]
-
-
 let getSessions (name: string) : HttpHandler =
     fun next ctx ->
         task {
