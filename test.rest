@@ -1,0 +1,23 @@
+# -*- restclient -*-
+
+# Get all candidates
+GET http://localhost:5000/candidate
+
+# Get info about Lore
+GET http://localhost:5000/candidate/Lore
+# Get Lore's sessions
+GET http://localhost:5000/candidate/Lore/session
+# Get Lore's total minutes
+GET http://localhost:5000/candidate/Lore/session/total
+
+# Get sessions swum for Camiel eligible for B
+GET http://localhost:5000/candidate/Camiel/session/B
+
+# Get minutes swum for Camiel eligible for B
+GET http://localhost:5000/candidate/Camiel/session/B/total
+
+# Register session for Eleanor
+POST http://localhost:5000/candidate/Eleanor/session
+Content-Type: application/json
+
+{ "deep": false, "date": "2023-05-29", "amount": 10}
