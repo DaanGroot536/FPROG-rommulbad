@@ -9,7 +9,9 @@ open Thoth.Json.Net
 open Thoth.Json.Giraffe
 open Service.Serialization
 open Application.Candidate
+open Application.Session
 open DataAccess.Candidate
+open DataAccess.Session
 
 //TODO: move all things that use model stuff to the application layer
 let getCandidates: HttpHandler =
@@ -38,9 +40,9 @@ let getCandidate (name: string) : HttpHandler =
     fun next ctx ->
         task {
             let store = ctx.GetService<Store>()
+            let candidateAccess = CandidateDataAccess(store)
 
-            let candidate =
-                InMemoryDatabase.lookup name store.candidates
+            let candidate = getCandidate candidateAccess name
             match candidate with
             | Some candidate ->
                     return! ThothSerializer.RespondJson candidate encoderCandidate next ctx
@@ -55,16 +57,12 @@ let addSession (name: string) : HttpHandler =
 
             match session with
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
-            | Ok { Deep = deep
-                   Date = date
-                   Minutes = minutes } ->
+            | Ok session ->
                 let store = ctx.GetService<Store>()
-
-                InMemoryDatabase.insert (name, SessionDate.dateTimeValue date) {Name = Name name; Deep = deep; Date = date; Minutes = minutes} store.sessions
-                |> ignore
-
-
-                return! text "OK" next ctx
+                let dataAccess = SessioneDataAccess(store)
+                match storeSession dataAccess session with
+                | Ok msg -> return! text "Session added successfully" next ctx
+                | _ -> return! text "Failed to store Session" next ctx
         }
 
 let addGuardian : HttpHandler =
@@ -92,11 +90,11 @@ let addCandidate : HttpHandler =
             | Error errorMessage -> return! RequestErrors.BAD_REQUEST errorMessage next ctx
             | Ok candidate ->
                 let store = ctx.GetService<Store>()
-
-                InMemoryDatabase.insert (Name.stringValue candidate.Name) candidate store.candidates
-                |> ignore
-
-                return! text "Candidate added successfully" next ctx
+                let dataAccess = CandidateDataAccess(store)
+                match storeCandidate dataAccess candidate with
+                | Ok msg -> return! text "Candidate added successfully" next ctx
+                | _ -> return! text "Failed to store Candidate" next ctx
+                
         }
 
 let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHandler =

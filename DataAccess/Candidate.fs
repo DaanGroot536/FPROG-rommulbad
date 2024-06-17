@@ -16,3 +16,6 @@ type CandidateDataAccess(store: Store) =
         member this.StoreCandidate (candidate: Candidate) =
             match InMemoryDatabase.insert (Name.stringValue candidate.Name) candidate store.candidates with
             | Ok _ -> Ok ()
+
+        member this.GetCandidate (name: string) =
+            InMemoryDatabase.lookup name store.candidates
