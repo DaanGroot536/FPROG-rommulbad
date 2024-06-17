@@ -74,8 +74,7 @@ let addGuardian : HttpHandler =
                 let dataAccess = GuardianDataAccess(store)
                 match Application.Guardian.storeGuardian dataAccess guardian with
                 | Ok msg -> return! text "Guardian added successfully" next ctx
-                | _ -> return! text "Failed to store Guardian" next ctx
-                
+                | Error (InsertError msg) -> return! text msg next ctx                
         }
 
 let addCandidate : HttpHandler =
@@ -90,8 +89,7 @@ let addCandidate : HttpHandler =
                 let dataAccess = CandidateDataAccess(store)
                 match Application.Candidate.storeCandidate dataAccess candidate with
                 | Ok msg -> return! text "Candidate added successfully" next ctx
-                | _ -> return! text "Failed to store Candidate" next ctx
-                
+                | Error (InsertError msg) -> return! text msg next ctx                
         }
 
 let assignCandidate (rawCandidateName: string, rawGuardianId: string) : HttpHandler =
